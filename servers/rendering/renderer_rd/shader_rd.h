@@ -34,6 +34,7 @@
 #include "core/templates/hash_map.h"
 #include "core/templates/local_vector.h"
 #include "core/templates/rid_owner.h"
+#include "core/templates/safe_refcount.h"
 #include "servers/rendering/rendering_device.h"
 #include "servers/rendering/rendering_server_types.h"
 
@@ -82,6 +83,9 @@ private:
 		HashMap<StringName, CharString> code_sections;
 		Vector<CharString> custom_defines;
 		Vector<WorkerThreadPool::GroupID> group_compilation_tasks;
+		// Variants of each group still compiling. The last one to finish saves the
+		// group to the shader cache (see _compile_variant).
+		Vector<SafeNumeric<uint32_t> *> group_compile_remaining;
 
 		Vector<Vector<uint8_t>> variant_data;
 		Vector<RID> variants;
@@ -95,10 +99,12 @@ private:
 	struct CompileData {
 		Version *version;
 		int group = 0;
+		SafeNumeric<uint32_t> *remaining = nullptr;
 	};
 
 	// Vector will have the size of SHADER_STAGE_MAX and unused stages will have empty strings.
 	void _compile_variant(uint32_t p_variant, CompileData p_data);
+	void _compile_variant_stages(uint32_t p_variant, const CompileData &p_data);
 
 	void _initialize_version(Version *p_version);
 	void _clear_version(Version *p_version);
