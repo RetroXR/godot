@@ -38,7 +38,9 @@ void initialize_etcpak_module(ModuleInitializationLevel p_level) {
 		return;
 	}
 
-#ifdef TOOLS_ENABLED
+#if defined(TOOLS_ENABLED) || defined(ANDROID_ENABLED)
+	// Android templates too: a mobile GPU takes ETC2 natively, and RetroXR
+	// compresses images it makes at run time (PDF pages) before uploading them.
 	Image::_image_compress_etc1_func = _compress_etc1;
 	Image::_image_compress_etc2_func = _compress_etc2;
 	Image::_image_compress_bc_func = _compress_bc;
