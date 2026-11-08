@@ -297,6 +297,14 @@ void RenderingServerDefault::finish() {
 			server_task_id = WorkerThreadPool::INVALID_TASK_ID;
 		}
 		server_thread = Thread::MAIN_ID;
+		// The render thread made the main RD current on itself (_assign_mt_ids).
+		// It is gone now, and the display server frees the RD on this thread:
+		// without handing it back, ~RenderingDevice's finalize() fails its
+		// render-thread guard and returns early, leaking every RID it owns.
+		RenderingDevice *rd = RenderingDevice::get_singleton();
+		if (rd) {
+			rd->make_current();
+		}
 	} else {
 		_finish();
 	}
