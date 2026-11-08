@@ -460,12 +460,33 @@ void RenderingServerDefault::draw(bool p_present, double frame_step) {
 	}
 }
 
+// tick() and pre_draw() advance physics interpolation, and the storage behind it (MultiMesh instance
+// buffers above all, through MeshStorage::update_interpolation_tick/_frame and _multimesh_set_buffer)
+// belongs to the render thread. Called from the main thread they wrote RenderingDevice buffers there
+// ("buffer_update can only be called from the render thread") while the render thread drew from them, and
+// they ran ahead of the instance transforms still queued for it. Queued like every other call.
 void RenderingServerDefault::tick() {
+	if (Thread::get_caller_id() != server_thread) {
+		command_queue.push(this, &RenderingServerDefault::_tick);
+	} else {
+		_tick();
+	}
+}
+
+void RenderingServerDefault::_tick() {
 	RSG::canvas->tick();
 	RSG::scene->tick();
 }
 
 void RenderingServerDefault::pre_draw(bool p_will_draw) {
+	if (Thread::get_caller_id() != server_thread) {
+		command_queue.push(this, &RenderingServerDefault::_pre_draw, p_will_draw);
+	} else {
+		_pre_draw(p_will_draw);
+	}
+}
+
+void RenderingServerDefault::_pre_draw(bool p_will_draw) {
 	RSG::scene->pre_draw(p_will_draw);
 }
 
