@@ -854,6 +854,27 @@ void WorkerThreadPool::exit_languages_threads() {
 	while (runlevel_data.exit_languages.num_exited_threads != threads.size()) {
 		control_cond_var.wait(lock);
 	}
+
+	// RetroXR: a task nobody waited for stays in `tasks` until finish(), which runs from unregister_core_types(),
+	// long after ScriptServer::finish_languages(). A GDScript lambda kept there holds a reference to its script, and
+	// freeing it then ran ~GDScript against a finished GDScriptLanguage (a SIGSEGV in recursive_mutex::lock under
+	// GDScript::cancel_pending_functions, Quest tombstone 2026-11-09). Let go of every COMPLETED task's callable now,
+	// while the languages are still up: it has run and nothing can call it again. (A task still queued keeps its
+	// callable, as before; a worker may yet pick it up.) They are released outside the lock: a callable's destructor
+	// may reach back into this pool.
+	LocalVector<Callable> leftovers;
+	for (KeyValue<TaskID, Task *> &E : tasks) {
+		if (E.value->completed && E.value->callable.is_valid()) {
+			leftovers.push_back(E.value->callable);
+			E.value->callable = Callable();
+		}
+	}
+	if (!leftovers.is_empty()) {
+		print_verbose(vformat("WorkerThreadPool: releasing %d task callable(s) never waited for, before the script languages finish.", leftovers.size()));
+		lock.temp_unlock();
+		leftovers.clear();
+		lock.temp_relock();
+	}
 }
 
 void WorkerThreadPool::finish() {
