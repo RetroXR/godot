@@ -1038,7 +1038,7 @@ layout(location = 14) in vec2 point_coord_interp;
 
 // SCENE_DEPTH: opaque scene depth at this fragment (pre-transparent depth copy).
 float scene_depth_fetch() {
-#if defined(USE_MULTIVIEW) && !defined(MODE_RENDER_DEPTH)
+#ifdef USE_MULTIVIEW
 	return texelFetch(multiviewSampler(depth_buffer, SAMPLER_NEAREST_CLAMP), ivec3(ivec2(gl_FragCoord.xy), ViewIndex), 0).r;
 #else
 	return texelFetch(sampler2D(depth_buffer, SAMPLER_NEAREST_CLAMP), ivec2(gl_FragCoord.xy), 0).r;
