@@ -120,6 +120,22 @@ vec4 rt_fwidth(vec4 value) {
 	return vec4(RT_FWIDTH_EPSILON);
 }
 
+// dFdx/dFdy (and Coarse/Fine): a hit shader has no neighbouring invocations, so
+// the honest answer is "no change across this pixel". Zero keeps a gradient fed
+// to textureGrad() at the top mip, which is what a hit's textureLod(0) samples.
+float rt_dFdx(float value) { return 0.0; }
+vec2 rt_dFdx(vec2 value) { return vec2(0.0); }
+vec3 rt_dFdx(vec3 value) { return vec3(0.0); }
+vec4 rt_dFdx(vec4 value) { return vec4(0.0); }
+float rt_dFdy(float value) { return 0.0; }
+vec2 rt_dFdy(vec2 value) { return vec2(0.0); }
+vec3 rt_dFdy(vec3 value) { return vec3(0.0); }
+vec4 rt_dFdy(vec4 value) { return vec4(0.0); }
+
+// textureQueryLod: level 0, the level a hit shader samples at anyway. A macro,
+// not a function: Vulkan GLSL refuses a sampler constructor as a call argument.
+#define rt_textureQueryLod(s, p) vec2(0.0)
+
 /* RT_CUSTOM_TEXTURE_DEFINES */
 /* RT_CUSTOM_FRAGMENT_GLOBALS */
 

@@ -601,6 +601,17 @@ bool SceneShaderRaytracing::_preprocess_shader(RID p_material, bool p_is_procedu
 	bool uses_instance_custom = false;
 	actions.usage_flag_pointers["INSTANCE_CUSTOM"] = &uses_instance_custom;
 	actions.function_renames["fwidth"] = "rt_fwidth";
+	actions.function_renames["fwidthCoarse"] = "rt_fwidth";
+	actions.function_renames["fwidthFine"] = "rt_fwidth";
+	// No derivatives or implicit LOD in hit shaders either: these failed to
+	// compile, and a material whose hit group fails drops out of the scene.
+	actions.function_renames["dFdx"] = "rt_dFdx";
+	actions.function_renames["dFdxCoarse"] = "rt_dFdx";
+	actions.function_renames["dFdxFine"] = "rt_dFdx";
+	actions.function_renames["dFdy"] = "rt_dFdy";
+	actions.function_renames["dFdyCoarse"] = "rt_dFdy";
+	actions.function_renames["dFdyFine"] = "rt_dFdy";
+	actions.function_renames["textureQueryLod"] = "rt_textureQueryLod";
 	int blend_modei = RendererRD::MaterialStorage::ShaderData::BLEND_MODE_MIX;
 	actions.render_mode_values["blend_add"] = Pair<int *, int>(&blend_modei, RendererRD::MaterialStorage::ShaderData::BLEND_MODE_ADD);
 	actions.render_mode_values["blend_mix"] = Pair<int *, int>(&blend_modei, RendererRD::MaterialStorage::ShaderData::BLEND_MODE_MIX);
