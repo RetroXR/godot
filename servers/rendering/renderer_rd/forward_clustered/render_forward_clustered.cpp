@@ -1916,7 +1916,15 @@ void RenderForwardClustered::_render_3d_upscaling(const RenderDataRD *p_render_d
 			params.color = rb->get_internal_texture(v);
 			params.depth = rb->get_depth_texture(v);
 			params.velocity = rb->get_velocity_buffer(false, v);
-			params.reactive = rb->get_internal_texture_reactive(v);
+			// The reactive mask (the internal color's alpha) gets a texture of its own. Handed to Streamline
+			// as the alpha-swizzled view of the color image itself, it replaced the color input's view and
+			// DLSS-RR upscaled the mask instead of the picture.
+			if (!rb->has_texture(SNAME("dlss"), SNAME("bias_mask"))) {
+				rb->create_texture(SNAME("dlss"), SNAME("bias_mask"), RD::DATA_FORMAT_R16_SFLOAT,
+						RD::TEXTURE_USAGE_SAMPLING_BIT | RD::TEXTURE_USAGE_STORAGE_BIT, RD::TEXTURE_SAMPLES_1, rb->get_internal_size());
+			}
+			params.reactive = rb->get_texture(SNAME("dlss"), SNAME("bias_mask"));
+			copy_effects->copy_to_rect(rb->get_internal_texture_reactive(v), params.reactive, Rect2i(Point2i(), rb->get_internal_size()));
 			params.exposure = exposure;
 			params.output = rb->get_upscaled_texture(v);
 			params.dlss_g = rb->get_frame_generation();

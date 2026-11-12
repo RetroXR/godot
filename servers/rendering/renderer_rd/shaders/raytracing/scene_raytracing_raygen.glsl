@@ -426,7 +426,11 @@ void main() {
 	}
 
 	vec3 final_radiance = total_radiance / float(samples_per_pixel);
-	imageStore(image, ivec2(pixel), vec4(final_radiance, 1.0));
+	// Alpha 0: the internal color's alpha is the upscaler's reactive mask (get_internal_texture_reactive),
+	// and the raster overlay drawn after the trace blends its coverage into it. DLSS-RR is handed that
+	// as kBufferTypeBiasCurrentColorHint, so an outline, a TV picture or anything else the overlay
+	// draws takes the current frame instead of trailing its history.
+	imageStore(image, ivec2(pixel), vec4(final_radiance, 0.0));
 #ifdef RT_TIMING_ENABLED
 	store_path_timing(ivec2(pixel), start_clock);
 #endif

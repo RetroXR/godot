@@ -30,6 +30,8 @@
 
 #include "dlss.h"
 
+#include "core/os/os.h"
+
 #ifdef STREAMLINE_ENABLED
 #define ENABLE_DLSS 1
 #endif
@@ -472,6 +474,14 @@ void DLSSEffect::_upscale_internal(RDD::CommandBufferID cmdid, const DLSSContext
 			// kBufferTypeNormalRoughness for packed normal+roughness (XYZ=normal, W=roughness)
 			assignResource(resources, resourceTags, numResources, p_params.dlss_rr_normal_roughness, sl::kBufferTypeNormalRoughness, sl::ResourceLifecycle::eValidUntilPresent);
 			assignResource(resources, resourceTags, numResources, p_params.dlss_rr_specular_motion_vectors, sl::kBufferTypeSpecularMotionVectors, sl::ResourceLifecycle::eValidUntilPresent);
+			// The internal color's alpha, seen as one channel: 0 where the trace drew (the raygen writes 0),
+			// the overlay's coverage where the raster overlay drew over it. Those pixels take the current
+			// frame: without this a hover outline, a TV picture or a swapped page trailed its history.
+			// RTX_NO_BIAS_MASK=1 drops it, a control for comparing the two.
+			static const bool no_bias_mask = OS::get_singleton()->has_environment("RTX_NO_BIAS_MASK");
+			if (p_params.reactive.is_valid() && !no_bias_mask) {
+				assignResource(resources, resourceTags, numResources, p_params.reactive, sl::kBufferTypeBiasCurrentColorHint, sl::ResourceLifecycle::eValidUntilPresent);
+			}
 		}
 
 		sl::Result result = StreamlineContext::get().slSetTag(context->viewport, resourceTags, numResources, nativeCmdlist);
