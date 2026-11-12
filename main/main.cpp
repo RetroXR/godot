@@ -5217,6 +5217,12 @@ bool Main::iteration() {
 #endif
 
 	if (fixed_fps != -1) {
+		// The frame token Streamline hands out here is what DLSS keys each frame's
+		// history on. Skipped under --fixed-fps (and so --write-movie), every frame
+		// reused the first token and DLSS drew black.
+		if (Streamline::get_singleton()) {
+			Streamline::get_singleton()->emit_marker(STREAMLINE_MARKER_BEFORE_MESSAGE_LOOP);
+		}
 		return exit;
 	}
 
