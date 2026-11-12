@@ -81,6 +81,7 @@ private:
 		CharString intersection_globals;
 		HashMap<StringName, CharString> code_sections;
 		Vector<CharString> custom_defines;
+		// A group's batch task, 0 for none, or GROUP_DONE_INLINE: run on the caller (a pool thread).
 		Vector<WorkerThreadPool::GroupID> group_compilation_tasks;
 		Vector<bool> group_loaded_from_cache;
 
@@ -105,6 +106,8 @@ private:
 	void _clear_version(Version *p_version);
 	void _compile_version_start(Version *p_version, int p_group);
 	void _compile_version_end(Version *p_version, int p_group);
+	static constexpr WorkerThreadPool::GroupID GROUP_DONE_INLINE = -2;
+	static bool _on_pool_thread();
 	void _compile_ensure_finished(Version *p_version);
 	void _allocate_placeholders(Version *p_version, int p_group);
 
