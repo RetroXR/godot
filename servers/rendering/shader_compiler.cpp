@@ -1234,7 +1234,11 @@ String ShaderCompiler::_dump_node_code(const SL::Node *p_node, int p_level, Gene
 						}
 
 						if (is_internal_func) {
-							const String *renamed_function = p_actions.function_renames.getptr(vnode->name);
+							// onode->arguments[0] is the function's own name.
+							const String *renamed_function = p_actions.function_renames_by_arity.getptr(String(vnode->name) + "/" + itos(onode->arguments.size() - 1));
+							if (!renamed_function) {
+								renamed_function = p_actions.function_renames.getptr(vnode->name);
+							}
 							code += renamed_function ? *renamed_function : String(vnode->name);
 							is_texture_func = texture_functions.has(vnode->name);
 							texture_func_no_uv = (vnode->name == "textureSize" || vnode->name == "textureQueryLevels");

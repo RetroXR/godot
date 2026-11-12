@@ -55,6 +55,9 @@ public:
 		HashMap<StringName, bool *> render_mode_flags;
 		HashMap<StringName, bool *> usage_flag_pointers;
 		HashMap<StringName, String> function_renames;
+		// A rename for one arity of a built-in only, keyed "name/argument count"
+		// (texture/3 is texture with a bias). Wins over function_renames.
+		HashMap<String, String> function_renames_by_arity;
 		HashMap<StringName, bool *> write_flag_pointers;
 		HashMap<StringName, Pair<int *, int>> stencil_mode_values;
 		int *stencil_reference = nullptr;

@@ -612,6 +612,10 @@ bool SceneShaderRaytracing::_preprocess_shader(RID p_material, bool p_is_procedu
 	actions.function_renames["dFdyCoarse"] = "rt_dFdy";
 	actions.function_renames["dFdyFine"] = "rt_dFdy";
 	actions.function_renames["textureQueryLod"] = "rt_textureQueryLod";
+	// A bias needs implicit derivatives, which a hit shader has none of. A hit
+	// samples the base level, so the bias IS the level it asks for.
+	actions.function_renames_by_arity["texture/3"] = "textureLod";
+	actions.function_renames_by_arity["textureProj/3"] = "textureProjLod";
 	int blend_modei = RendererRD::MaterialStorage::ShaderData::BLEND_MODE_MIX;
 	actions.render_mode_values["blend_add"] = Pair<int *, int>(&blend_modei, RendererRD::MaterialStorage::ShaderData::BLEND_MODE_ADD);
 	actions.render_mode_values["blend_mix"] = Pair<int *, int>(&blend_modei, RendererRD::MaterialStorage::ShaderData::BLEND_MODE_MIX);
