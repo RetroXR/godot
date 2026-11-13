@@ -536,7 +536,13 @@ void WorkerThreadPool::_wait_collaboratively(ThreadData *p_caller_pool_thread, T
 				}
 			}
 
-			if (p_caller_pool_thread->pool->task_queue.first()) {
+			// RetroXR: the thread running a pump task (the rendering server's, thread_model separate) never takes other
+			// tasks while it waits. Yielding for commands it used to pick up a resource load, whose texture_set_path()
+			// then flushed the render queue on this same thread and drew a frame INSIDE the load, waiting on pipeline
+			// compiles that no worker was free to run: the room's restore hung for good, every thread asleep (a Quest
+			// 3, 2026-11-13, with lldb; 1 launch in ~8-11). It is a dedicated render thread; the other workers run
+			// the loads and, waiting collaboratively, the compiles.
+			if (p_caller_pool_thread->pool->task_queue.first() && !p_caller_pool_thread->has_pump_task) {
 				task_to_process = task_queue.first()->self();
 				if ((p_task == ThreadData::YIELDING || p_caller_pool_thread->has_pump_task == true) && task_to_process->is_pump_task) {
 					task_to_process = nullptr;
