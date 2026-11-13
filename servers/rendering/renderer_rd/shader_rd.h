@@ -104,6 +104,7 @@ private:
 
 	// Vector will have the size of SHADER_STAGE_MAX and unused stages will have empty strings.
 	void _compile_variant(uint32_t p_variant, CompileData p_data);
+	void _compile_version_end_inline(Version *p_version, int p_group);
 	void _compile_variant_stages(uint32_t p_variant, const CompileData &p_data);
 
 	void _initialize_version(Version *p_version);

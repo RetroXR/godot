@@ -763,6 +763,19 @@ void ShaderRD::_compile_version_start(Version *p_version, int p_group) {
 	}
 #endif
 
+	// A pool thread compiles the group itself (RetroXR). It would otherwise queue a group task and then block on it
+	// in _compile_version_end, which does not run queued work while it waits: with mesh loads holding every worker of
+	// a small pool (four on a Quest) in mesh_generate_pipelines -> version_is_valid, nothing was left to run the
+	// compiles and the room's restore hung for good, every thread asleep, whenever the shader cache was cold (the
+	// first boot after any change to the scene shader). Measured 2026-11-13 with lldb on a Quest 3.
+	if (WorkerThreadPool::get_singleton()->get_thread_index() != -1) {
+		for (uint32_t i = 0; i < group_to_variant_map[p_group].size(); i++) {
+			_compile_variant(i, compile_data);
+		}
+		p_version->group_compilation_tasks.write[p_group] = 0;
+		_compile_version_end_inline(p_version, p_group);
+		return;
+	}
 	WorkerThreadPool::GroupID group_task = WorkerThreadPool::get_singleton()->add_template_group_task(this, &ShaderRD::_compile_variant, compile_data, group_to_variant_map[p_group].size(), -1, true, SNAME("ShaderCompilation"));
 	p_version->group_compilation_tasks.write[p_group] = group_task;
 }
@@ -774,6 +787,10 @@ void ShaderRD::_compile_version_end(Version *p_version, int p_group) {
 	WorkerThreadPool::GroupID group_task = p_version->group_compilation_tasks[p_group];
 	WorkerThreadPool::get_singleton()->wait_for_group_task_completion(group_task);
 	p_version->group_compilation_tasks.write[p_group] = 0;
+	_compile_version_end_inline(p_version, p_group);
+}
+
+void ShaderRD::_compile_version_end_inline(Version *p_version, int p_group) {
 	if (p_version->group_compile_remaining[p_group] != nullptr) {
 		memdelete(p_version->group_compile_remaining[p_group]);
 		p_version->group_compile_remaining.write[p_group] = nullptr;
