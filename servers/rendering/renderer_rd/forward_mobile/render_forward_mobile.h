@@ -369,6 +369,29 @@ private:
 			}
 		};
 
+		struct SortByPriorityDepthSliceThenKey {
+			_FORCE_INLINE_ bool operator()(const GeometryInstanceSurfaceDataCache *A, const GeometryInstanceSurfaceDataCache *B) const {
+				if (A->sort.priority != B->sort.priority) {
+					return A->sort.priority < B->sort.priority;
+				}
+				// depth_layer is 16 slices of the far plane (XRCamera3D's 4000 m: the whole room is slice 0), so slice
+				// the instance's own distance instead, half a metre a slice.
+				const int sa = int(A->owner->depth * 2.0f);
+				const int sb = int(B->owner->depth * 2.0f);
+				if (sa != sb) {
+					return sa < sb;
+				}
+				return (A->sort.sort_key2 == B->sort.sort_key2) ? (A->sort.sort_key1 < B->sort.sort_key1) : (A->sort.sort_key2 < B->sort.sort_key2);
+			}
+		};
+
+		// Near to far in half-metre slices, shader/material/geometry order within a slice,
+		// render priority still first: a tile GPU rejects hidden fragments early when the near things come first.
+		void sort_by_priority_depth_slice_then_key() {
+			SortArray<GeometryInstanceSurfaceDataCache *, SortByPriorityDepthSliceThenKey> sorter;
+			sorter.sort(elements.ptr(), elements.size());
+		}
+
 		void sort_by_key_and_stencil() {
 			SortArray<GeometryInstanceSurfaceDataCache *, SortByKeyAndStencil> sorter;
 			sorter.sort(elements.ptr(), elements.size());
