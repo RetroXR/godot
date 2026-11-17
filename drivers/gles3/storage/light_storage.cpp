@@ -1553,6 +1553,13 @@ bool LightStorage::shadow_atlas_update_light(RID p_atlas, RID p_light_instance, 
 		return true;
 	}
 
+	if (old_quadrant != SHADOW_INVALID) {
+		// It wanted a slot of another size and found none, so it keeps the one it has: record the version that is
+		// drawn into it now, as the branch above does when it does not want to move. Without this, one change to the
+		// light leaves the slot's version stale and the light redraws its shadow every frame for as long as it waits.
+		shadow_atlas->quadrants[old_quadrant].shadows.write[old_shadow].version = p_light_version;
+	}
+
 	return should_redraw;
 }
 
