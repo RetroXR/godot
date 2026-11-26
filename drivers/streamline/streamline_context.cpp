@@ -228,6 +228,26 @@ bool StreamlineContext::dlss_clamp_render_size(int p_target_width, int p_target_
 	return true;
 }
 
+// An OpenXR runtime creates the Vulkan instance AND device itself, through the vkGetInstanceProcAddr Godot hands
+// it. Handed Streamline's interposer, the runtime's vkCreateDevice ran through Streamline's hooks and its
+// downloaded plugins, and Meta's PC runtime crashed in them (libovrrtimpl64_1 -> sl.interposer -> an NGX plugin,
+// with Link active). Streamline cannot be attached to a device it did not see created, so it is shut down before
+// any Vulkan object exists and every entry point is cleared: each caller already tests its pointer, so DLSS,
+// Reflex and frame generation report unsupported and the frame token is skipped. Desktop without OpenXR is unchanged.
+void StreamlineContext::shutdown_for_external_device(const char *p_reason) {
+	StreamlineContext &ctx = StreamlineContext::get();
+	if (ctx.slInit == nullptr) {
+		return;
+	}
+	if (ctx.slShutdown) {
+		ctx.slShutdown();
+	}
+	const bool is_game = ctx.is_game;
+	ctx = StreamlineContext();
+	ctx.is_game = is_game;
+	print_line(vformat("Streamline: disabled, %s.", p_reason));
+}
+
 void StreamlineContext::dlssg_disable() {
 	STREAMLINE_GAME_ONLY; // Disable DLSS-G for editor or project settings.
 

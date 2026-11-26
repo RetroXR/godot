@@ -122,6 +122,8 @@ public:
 	void dlssg_disable();
 
 	static void initialize(bool d3d12);
+	// Stand Streamline down before any Vulkan object exists, for a device another party creates (OpenXR).
+	static void shutdown_for_external_device(const char *p_reason);
 
 	static StreamlineContext &get();
 

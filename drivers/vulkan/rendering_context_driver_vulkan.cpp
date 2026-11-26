@@ -43,6 +43,11 @@
 #include "drivers/vulkan/rendering_device_driver_vulkan.h"
 #include "drivers/vulkan/vulkan_hooks.h"
 
+#if defined(USE_VOLK) && defined(STREAMLINE_ENABLED) && defined(_WIN32)
+#include "core/os/os.h"
+#include "drivers/streamline/streamline_context.h"
+#endif
+
 #ifndef DEV_ENABLED
 #include "core/os/os.h"
 #endif
@@ -924,8 +929,15 @@ Error RenderingContextDriverVulkan::initialize() {
 	Error err;
 
 #if defined(USE_VOLK) && defined(STREAMLINE_ENABLED) && defined(_WIN32)
-	HMODULE module;
-	module = LoadLibraryA("sl.interposer.dll");
+	HMODULE module = nullptr;
+	// GODOT_STREAMLINE_WITH_OPENXR=1 keeps the old path (the interposer under OpenXR), the control for a crash test.
+	if (VulkanHooks::get_singleton() != nullptr && OS::get_singleton()->get_environment("GODOT_STREAMLINE_WITH_OPENXR") != "1") {
+		// OpenXR creates the instance and device: give it the real loader, never Streamline's interposer
+		// (StreamlineContext::shutdown_for_external_device has why).
+		StreamlineContext::shutdown_for_external_device("OpenXR creates the Vulkan device");
+	} else {
+		module = LoadLibraryA("sl.interposer.dll");
+	}
 	if (module != nullptr) {
 		// note: function pointer is cast through void function pointer to silence cast-function-type warning on gcc8
 		PFN_vkGetInstanceProcAddr vk_getInstanceProcAddr = (PFN_vkGetInstanceProcAddr)(void (*)())GetProcAddress(module, "vkGetInstanceProcAddr");
